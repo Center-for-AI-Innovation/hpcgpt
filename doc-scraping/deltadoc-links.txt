@@ -1,4 +1,4 @@
-# Just had to add these individualy through the UIUC Chat interface manually 
+### Delta Docs (Just had to add these individualy through the UIUC Chat interface manually)
 https://docs.ncsa.illinois.edu/systems/delta/en/latest/index.html
 https://docs.ncsa.illinois.edu/systems/delta/en/latest/status_updates.html
 https://docs.ncsa.illinois.edu/systems/delta/en/latest/quick_start.html
@@ -30,3 +30,15 @@ https://docs.ncsa.illinois.edu/systems/delta/en/latest/user_guide/visualization.
 https://docs.ncsa.illinois.edu/systems/delta/en/latest/user_guide/debug_perf.html
 https://docs.ncsa.illinois.edu/systems/delta/en/latest/user_guide/citizenship.html
 https://docs.ncsa.illinois.edu/systems/delta/en/latest/user_guide/acknowledge.html
+### Taiga Docs
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/status-updates.html
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/help.html
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/user-guide/architecture.html
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/user-guide/lustre.html
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/user-guide/allocations.html
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/user-guide/pricing.html
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/user-guide/access-methods.html
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/user-guide/data-recovery.html
+### Slurm (worked for all docs with equal and below ingest option) 
+https://slurm.schedmd.com

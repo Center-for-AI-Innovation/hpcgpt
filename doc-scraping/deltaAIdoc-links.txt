@@ -28,3 +28,15 @@ https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/visualizatio
 https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/debug-perf.html
 https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/citizenship.html
 https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/acknowledge.html
+### Taiga Docs
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/status-updates.html
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/help.html
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/user-guide/architecture.html
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/user-guide/lustre.html
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/user-guide/allocations.html
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/user-guide/pricing.html
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/user-guide/access-methods.html
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/user-guide/data-recovery.html
+### Slurm (worked for all docs with equal and below ingest option) 
+https://slurm.schedmd.com
