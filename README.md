@@ -7,6 +7,18 @@ https://uiuc.chat/Delta-Documentation
 Delta AI Chatbot 
 https://uiuc.chat/DeltaAI-Documentation
 
+chatwithdelta is the typescript version of the cli tool, based on the ui provided by https://github.com/dustinlacewell/chatwith for an openai application. 
+
+```bash
+# First time only
+npm install 
+```
+
+```bash
+npm run start
+```
+
+
 Chatconnector.py is the WIP CLI tool for interacting with the chatbots. To use configure sample.ini with your uiuc chat API key and then simply call from the command line with:
 
 ```bash
