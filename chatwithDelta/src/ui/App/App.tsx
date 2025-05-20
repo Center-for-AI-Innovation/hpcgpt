@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Box, Static, Text } from 'ink';
+import { Box, Text } from 'ink';
 import https from 'https';
 import { URL } from 'url';
 import { FC, useState } from 'react';
@@ -22,9 +22,6 @@ export const App: FC = () => {
         content: 'Hello, I am a chatbot. What can I help you with?'
     }]);
 
-    const extendHistory = (entries: ChatMessageT[]) => {
-        setHistory([...history, ...entries]);
-    }
 
     const onSubmit = async () => {
         setWaiting(true);
@@ -65,9 +62,14 @@ export const App: FC = () => {
         // .catch(error => {
         // console.error('Error:', error);
         // });
+        // Add the user's message and a placeholder for the assistant
+        setHistory(prev => [...prev, userMessage, { role: 'assistant', content: '' }]);
+
+        // Stream the response and update the last message chunk by chunk
         const url = new URL(endpoint);
         const payload = JSON.stringify(requestData);
-        const res = await new Promise<{ statusCode: number | undefined; body: string }>((resolve, reject) => {
+
+        await new Promise<void>((resolve) => {
             const req = https.request(
                 {
                     hostname: url.hostname,
@@ -78,23 +80,27 @@ export const App: FC = () => {
                         'Content-Length': Buffer.byteLength(payload),
                     },
                 },
-                (res) => {
-                    let data = '';
-                    res.on('data', (chunk) => (data += chunk));
-                    res.on('end', () => resolve({ statusCode: res.statusCode, body: data }));
+                (response) => {
+                    response.on('data', (chunk) => {
+                        const token = chunk.toString('utf8');
+                        setHistory(prevHistory => {
+                            const newHistory = [...prevHistory];
+                            const last = newHistory[newHistory.length - 1]!;
+                            newHistory[newHistory.length - 1] = {
+                                role: last.role,
+                                content: last.content + token,
+                            };
+                            return newHistory;
+                        });
+                    });
+                    response.on('end', () => resolve());
                 }
             );
-            req.on('error', reject);
+            req.on('error', () => resolve());
             req.write(payload);
             req.end();
         });
-        // Handle response as raw text (stream: false returns full text body)
-        const content = res.body;
-        const aiMessage: ChatMessageT = {
-            role: 'assistant',
-            content,
-        };
-        extendHistory([userMessage, aiMessage]);
+
         setWaiting(false);
         setInput('');
     };
@@ -108,15 +114,19 @@ export const App: FC = () => {
         return <TextBox width={80} value={input} onChange={setInput} onSubmit={onSubmit} />
     }
 
-    return <Box width={80}>
-        <Static items={history}>
-            {(item, idx) => {
-                return <Box key={idx} width={80} justifyContent={item.role === 'user' ? 'flex-end' : 'flex-start'}>
+    return (
+        <Box width={80} flexDirection="column">
+            {history.map((item, idx) => (
+                <Box
+                    key={idx}
+                    width={80}
+                    justifyContent={item.role === 'user' ? 'flex-end' : 'flex-start'}
+                >
                     <ChatMessage {...item} />
                 </Box>
-            }}
-        </Static>
-        <Prompt />
-    </Box>
+            ))}
+            <Prompt />
+        </Box>
+    );
 }
 
