@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Box, Text } from 'ink';
+import { Box, Text, useStdout } from 'ink';
 import https from 'https';
 import { URL } from 'url';
 import { FC, useState } from 'react';
@@ -23,6 +23,8 @@ export const App: FC = () => {
     }]);
 
 
+    const {stdout} = useStdout();
+    const terminalWidth = stdout.columns || 80;
     const onSubmit = async () => {
         setWaiting(true);
 
@@ -107,19 +109,21 @@ export const App: FC = () => {
 
     const Prompt = () => {
         if (waiting) {
-            return <Box width={60} borderStyle="round" borderColor="green">
-                <Text>"assistant is thinking..."</Text>
-            </Box>
-        };
-        return <TextBox width={80} value={input} onChange={setInput} onSubmit={onSubmit} />
-    }
+            return (
+                <Box width={terminalWidth} borderStyle="round" borderColor="green">
+                    <Text>assistant is thinking...</Text>
+                </Box>
+            );
+        }
+        return <TextBox width={terminalWidth} value={input} onChange={setInput} onSubmit={onSubmit} />;
+    };
 
     return (
-        <Box width={80} flexDirection="column">
+        <Box width={terminalWidth} flexDirection="column">
             {history.map((item, idx) => (
                 <Box
                     key={idx}
-                    width={80}
+                    width={terminalWidth}
                     justifyContent={item.role === 'user' ? 'flex-end' : 'flex-start'}
                 >
                     <ChatMessage {...item} />
