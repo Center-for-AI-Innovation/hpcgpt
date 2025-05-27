@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Box, Text, useStdout } from 'ink';
+import { Box, Text, useStdout, Static } from 'ink';
 import https from 'https';
 import { URL } from 'url';
 import { FC, useState } from 'react';
@@ -23,8 +23,11 @@ export const App: FC = () => {
     }]);
 
 
-    const {stdout} = useStdout();
+    const { stdout } = useStdout();
     const terminalWidth = stdout.columns || 80;
+    // Separate history into static (printed once) and dynamic (streaming) parts
+    const staticHistory = waiting ? history.slice(0, history.length - 1) : history;
+    const dynamicMessage = waiting ? history[history.length - 1] : null;
     const onSubmit = async () => {
         setWaiting(true);
 
@@ -119,18 +122,28 @@ export const App: FC = () => {
     };
 
     return (
-        <Box width={terminalWidth} flexDirection="column">
-            {history.map((item, idx) => (
+        <>
+            <Static items={staticHistory}>
+                {(item, idx) => (
+                    <Box
+                        key={idx}
+                        width={terminalWidth}
+                        justifyContent={item.role === 'user' ? 'flex-end' : 'flex-start'}
+                    >
+                        <ChatMessage {...item} />
+                    </Box>
+                )}
+            </Static>
+            {dynamicMessage && (
                 <Box
-                    key={idx}
                     width={terminalWidth}
-                    justifyContent={item.role === 'user' ? 'flex-end' : 'flex-start'}
+                    justifyContent={dynamicMessage.role === 'user' ? 'flex-end' : 'flex-start'}
                 >
-                    <ChatMessage {...item} />
+                    <ChatMessage {...dynamicMessage} />
                 </Box>
-            ))}
+            )}
             <Prompt />
-        </Box>
+        </>
     );
 }
 
