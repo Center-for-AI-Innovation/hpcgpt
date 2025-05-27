@@ -10,9 +10,11 @@ import { z } from 'zod';
 import { ChatMessage, ChatMessageT, TextBox } from '../index.js';
 
 const envSchema = z.object({
+    SYSTEM_NAME: z.string(),
     UIUC_API_KEY: z.string(),
     UIUC_COURSE_NAME: z.string(),
 });
+process.env['SYSTEM_NAME'] = "Delta";
 const env = envSchema.parse(process.env);
 
 // Base class for slash commands
@@ -79,7 +81,7 @@ class EmailCommand extends SlashCommand {
             await transporter.sendMail({
                 from: 'abode@illinois.edu',
                 to: 'abode@illinois.edu',
-                subject: 'ChatWith Conversation',
+                subject: `ChatWith${env.SYSTEM_NAME} Conversation`,
                 text: plainText,
                 html: htmlContent,
             });
@@ -97,7 +99,7 @@ const ConversationEmail = ({ messages }: ConversationEmailProps) => (
     <html>
         <head>
             <meta charSet="utf-8" />
-            <title>ChatWith Conversation</title>
+            <title>ChatWith{env.SYSTEM_NAME} Conversation</title>
         </head>
         <body style={{ fontFamily: 'Arial, sans-serif', padding: '20px' }}>
             <h1>ChatWith Conversation</h1>
