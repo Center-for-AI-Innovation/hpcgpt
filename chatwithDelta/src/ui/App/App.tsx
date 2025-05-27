@@ -2,6 +2,8 @@ import React from 'react';
 
 import { Box, Text, useStdout, Static } from 'ink';
 import https from 'https';
+import nodemailer from 'nodemailer';
+import { render } from '@react-email/render';
 import { URL } from 'url';
 import { FC, useState } from 'react';
 import { z } from 'zod';
@@ -12,6 +14,25 @@ const envSchema = z.object({
     UIUC_COURSE_NAME: z.string(),
 });
 const env = envSchema.parse(process.env);
+
+// React Email template for conversation HTML
+type ConversationEmailProps = { messages: ChatMessageT[] };
+const ConversationEmail = ({ messages }: ConversationEmailProps) => (
+    <html>
+        <head>
+            <meta charSet="utf-8" />
+            <title>ChatWith Conversation</title>
+        </head>
+        <body style={{ fontFamily: 'Arial, sans-serif', padding: '20px' }}>
+            <h1>ChatWith Conversation</h1>
+            {messages.map((msg, i) => (
+                <p key={i}>
+                    <strong>{msg.role}:</strong> {msg.content}
+                </p>
+            ))}
+        </body>
+    </html>
+);
 
 
 export const App: FC = () => {
@@ -25,10 +46,51 @@ export const App: FC = () => {
 
     const { stdout } = useStdout();
     const terminalWidth = stdout.columns || 80;
+    // Define available slash commands
+    const commandList = [
+        { cmd: 'help', description: 'Show this help message' },
+        { cmd: 'email', description: 'Email conversation to abode@illinois.edu' },
+    ];
     // Separate history into static (printed once) and dynamic (streaming) parts
     const staticHistory = waiting ? history.slice(0, history.length - 1) : history;
     const dynamicMessage = waiting ? history[history.length - 1] : null;
     const onSubmit = async () => {
+        // Handle slash commands (e.g., /help)
+        const trimmed = input.trim();
+        if (trimmed.startsWith('/')) {
+            const parts = trimmed.slice(1).split(/\s+/);
+            const name = parts[0];
+            const userEntry: ChatMessageT = { role: 'user', content: trimmed };
+            const newHistory: ChatMessageT[] = [...history, userEntry];
+            setHistory(newHistory);
+            if (name === 'help') {
+                const helpText = commandList
+                    .map(c => `/${c.cmd} - ${c.description}`)
+                    .join('\n');
+                setHistory(prev => [...prev, { role: 'assistant', content: helpText }]);
+            } else if (name === 'email') {
+                // Email the conversation using React Email template
+                const plainText = newHistory.map(item => `${item.role}: ${item.content}`).join('\n');
+                const htmlContent = await render(<ConversationEmail messages={newHistory} />);
+                const transporter = nodemailer.createTransport({ sendmail: true, newline: 'unix', path: '/usr/sbin/sendmail' });
+                try {
+                    await transporter.sendMail({
+                        from: 'abode@illinois.edu',
+                        to: 'abode@illinois.edu',
+                        subject: 'ChatWith Conversation',
+                        text: plainText,
+                        html: htmlContent,
+                    });
+                    setHistory(prev => [...prev, { role: 'assistant', content: 'Email sent to abode@illinois.edu' }]);
+                } catch (err: any) {
+                    setHistory(prev => [...prev, { role: 'assistant', content: `Failed to send email: ${err.message}` }]);
+                }
+            } else {
+                setHistory(prev => [...prev, { role: 'assistant', content: `Unknown command: ${name}. Type /help for list.` }]);
+            }
+            setInput('');
+            return;
+        }
         setWaiting(true);
 
         const userMessage: ChatMessageT = {
