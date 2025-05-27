@@ -15,6 +15,82 @@ const envSchema = z.object({
 });
 const env = envSchema.parse(process.env);
 
+// Base class for slash commands
+abstract class SlashCommand {
+    name: string;
+    description: string;
+    constructor(name: string, description: string) {
+        this.name = name;
+        this.description = description;
+    }
+    abstract execute(ctx: {
+        args: string[];
+        history: ChatMessageT[];
+        setHistory: React.Dispatch<React.SetStateAction<ChatMessageT[]>>;
+        setInput: React.Dispatch<React.SetStateAction<string>>;
+        commands: SlashCommand[];
+    }): Promise<void>;
+}
+
+// /help command
+class HelpCommand extends SlashCommand {
+    constructor() {
+        super('help', 'Show this help message');
+    }
+    async execute(ctx: {
+        args: string[];
+        history: ChatMessageT[];
+        setHistory: React.Dispatch<React.SetStateAction<ChatMessageT[]>>;
+        setInput: React.Dispatch<React.SetStateAction<string>>;
+        commands: SlashCommand[];
+    }) {
+        const { args, setHistory, setInput, commands } = ctx;
+        // record user command
+        const userEntry: ChatMessageT = { role: 'user', content: '/' + this.name + (args.length ? ' ' + args.join(' ') : '') };
+        setHistory(prev => [...prev, userEntry]);
+        // build help text
+        const helpText = commands.map(c => `/${c.name} - ${c.description}`).join('\n');
+        setHistory(prev => [...prev, { role: 'assistant', content: helpText }]);
+        setInput('');
+    }
+}
+
+// /email command
+class EmailCommand extends SlashCommand {
+    constructor() {
+        super('email', 'Email conversation to abode@illinois.edu');
+    }
+    async execute(ctx: {
+        args: string[];
+        history: ChatMessageT[];
+        setHistory: React.Dispatch<React.SetStateAction<ChatMessageT[]>>;
+        setInput: React.Dispatch<React.SetStateAction<string>>;
+        commands: SlashCommand[];
+    }) {
+        const { args, history, setHistory, setInput } = ctx;
+        const userEntry: ChatMessageT = { role: 'user', content: '/' + this.name + (args.length ? ' ' + args.join(' ') : '') };
+        const newHistory = [...history, userEntry];
+        setHistory(newHistory);
+        // prepare email content
+        const plainText = newHistory.map(item => `${item.role}: ${item.content}`).join('\n');
+        const htmlContent = await render(<ConversationEmail messages={newHistory} />);
+        const transporter = nodemailer.createTransport({ sendmail: true, newline: 'unix', path: '/usr/sbin/sendmail' });
+        try {
+            await transporter.sendMail({
+                from: 'abode@illinois.edu',
+                to: 'abode@illinois.edu',
+                subject: 'ChatWith Conversation',
+                text: plainText,
+                html: htmlContent,
+            });
+            setHistory(prev => [...prev, { role: 'assistant', content: 'Email sent to abode@illinois.edu' }]);
+        } catch (err: any) {
+            setHistory(prev => [...prev, { role: 'assistant', content: `Failed to send email: ${err.message}` }]);
+        }
+        setInput('');
+    }
+}
+
 // React Email template for conversation HTML
 type ConversationEmailProps = { messages: ChatMessageT[] };
 const ConversationEmail = ({ messages }: ConversationEmailProps) => (
@@ -46,49 +122,30 @@ export const App: FC = () => {
 
     const { stdout } = useStdout();
     const terminalWidth = stdout.columns || 80;
-    // Define available slash commands
-    const commandList = [
-        { cmd: 'help', description: 'Show this help message' },
-        { cmd: 'email', description: 'Email conversation to abode@illinois.edu' },
-    ];
+    // Initialize slash commands
+    const commands: SlashCommand[] = [new HelpCommand(), new EmailCommand()];
     // Separate history into static (printed once) and dynamic (streaming) parts
     const staticHistory = waiting ? history.slice(0, history.length - 1) : history;
     const dynamicMessage = waiting ? history[history.length - 1] : null;
     const onSubmit = async () => {
-        // Handle slash commands (e.g., /help)
+        // Handle slash commands (e.g., /help, /email)
         const trimmed = input.trim();
         if (trimmed.startsWith('/')) {
             const parts = trimmed.slice(1).split(/\s+/);
             const name = parts[0];
-            const userEntry: ChatMessageT = { role: 'user', content: trimmed };
-            const newHistory: ChatMessageT[] = [...history, userEntry];
-            setHistory(newHistory);
-            if (name === 'help') {
-                const helpText = commandList
-                    .map(c => `/${c.cmd} - ${c.description}`)
-                    .join('\n');
-                setHistory(prev => [...prev, { role: 'assistant', content: helpText }]);
-            } else if (name === 'email') {
-                // Email the conversation using React Email template
-                const plainText = newHistory.map(item => `${item.role}: ${item.content}`).join('\n');
-                const htmlContent = await render(<ConversationEmail messages={newHistory} />);
-                const transporter = nodemailer.createTransport({ sendmail: true, newline: 'unix', path: '/usr/sbin/sendmail' });
-                try {
-                    await transporter.sendMail({
-                        from: 'abode@illinois.edu',
-                        to: 'abode@illinois.edu',
-                        subject: 'ChatWith Conversation',
-                        text: plainText,
-                        html: htmlContent,
-                    });
-                    setHistory(prev => [...prev, { role: 'assistant', content: 'Email sent to abode@illinois.edu' }]);
-                } catch (err: any) {
-                    setHistory(prev => [...prev, { role: 'assistant', content: `Failed to send email: ${err.message}` }]);
-                }
+            const args = parts.slice(1);
+            const cmd = commands.find(c => c.name === name);
+            if (cmd) {
+                await cmd.execute({ args, history, setHistory, setInput, commands });
             } else {
-                setHistory(prev => [...prev, { role: 'assistant', content: `Unknown command: ${name}. Type /help for list.` }]);
+                // unknown command
+                setHistory(prev => [
+                    ...prev,
+                    { role: 'user', content: trimmed },
+                    { role: 'assistant', content: `Unknown command: ${name}. Type /help for list.` },
+                ]);
+                setInput('');
             }
-            setInput('');
             return;
         }
         setWaiting(true);
@@ -180,7 +237,15 @@ export const App: FC = () => {
                 </Box>
             );
         }
-        return <TextBox width={terminalWidth} value={input} onChange={setInput} onSubmit={onSubmit} />;
+        // User input with helper hint below
+        return (
+            <Box flexDirection="column">
+                <TextBox width={terminalWidth} value={input} onChange={setInput} onSubmit={onSubmit} />
+                <Box width={terminalWidth} paddingTop={0}>
+                    <Text dimColor>ctrl+c to exit | /help to see commands | enter to send</Text>
+                </Box>
+            </Box>
+        );
     };
 
     return (
