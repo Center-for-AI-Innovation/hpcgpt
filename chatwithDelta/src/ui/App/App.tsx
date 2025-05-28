@@ -3,118 +3,15 @@ import React from 'react';
 import { Box, Text, useStdout, Static } from 'ink';
 import SelectInput from 'ink-select-input';
 import https from 'https';
-import nodemailer from 'nodemailer';
-import { render } from '@react-email/render';
 import { URL } from 'url';
 import { FC, useState } from 'react';
-import { z } from 'zod';
 import { ChatMessage, ChatMessageT, TextBox } from '../index.js';
+import { SlashCommand } from './commands/SlashCommand.js';
+import { HelpCommand } from './commands/HelpCommand.js';
+import { EmailCommand } from './commands/EmailCommand.js';
+import { env } from '../../env.js';
 
-const envSchema = z.object({
-    SYSTEM_NAME: z.string(),
-    UIUC_API_KEY: z.string(),
-    UIUC_COURSE_NAME: z.string(),
-});
-process.env['SYSTEM_NAME'] = "Delta";
-const env = envSchema.parse(process.env);
 
-// Base class for slash commands
-abstract class SlashCommand {
-    name: string;
-    description: string;
-    constructor(name: string, description: string) {
-        this.name = name;
-        this.description = description;
-    }
-    abstract execute(ctx: {
-        args: string[];
-        history: ChatMessageT[];
-        setHistory: React.Dispatch<React.SetStateAction<ChatMessageT[]>>;
-        setInput: React.Dispatch<React.SetStateAction<string>>;
-        commands: SlashCommand[];
-    }): Promise<void>;
-}
-
-// /help command
-class HelpCommand extends SlashCommand {
-    constructor() {
-        super('help', 'Show this help message');
-    }
-    async execute(ctx: {
-        args: string[];
-        history: ChatMessageT[];
-        setHistory: React.Dispatch<React.SetStateAction<ChatMessageT[]>>;
-        setInput: React.Dispatch<React.SetStateAction<string>>;
-        commands: SlashCommand[];
-    }) {
-        const { args, setHistory, setInput, commands } = ctx;
-        // record user command
-        const userEntry: ChatMessageT = { role: 'user', content: '/' + this.name + (args.length ? ' ' + args.join(' ') : '') };
-        setHistory(prev => [...prev, userEntry]);
-        // build help text
-        // Build help text, including /model command
-        const helpLines = commands.map(c => `/${c.name} - ${c.description}`);
-        helpLines.push('/model - Select chat model');
-        const helpText = helpLines.join('\n');
-        setHistory(prev => [...prev, { role: 'assistant', content: helpText }]);
-        setInput('');
-    }
-}
-
-// /email command
-class EmailCommand extends SlashCommand {
-    constructor() {
-        super('email', 'Email conversation to abode@illinois.edu');
-    }
-    async execute(ctx: {
-        args: string[];
-        history: ChatMessageT[];
-        setHistory: React.Dispatch<React.SetStateAction<ChatMessageT[]>>;
-        setInput: React.Dispatch<React.SetStateAction<string>>;
-        commands: SlashCommand[];
-    }) {
-        const { args, history, setHistory, setInput } = ctx;
-        const userEntry: ChatMessageT = { role: 'user', content: '/' + this.name + (args.length ? ' ' + args.join(' ') : '') };
-        const newHistory = [...history, userEntry];
-        setHistory(newHistory);
-        // prepare email content
-        const plainText = newHistory.map(item => `${item.role}: ${item.content}`).join('\n');
-        const htmlContent = await render(<ConversationEmail messages={newHistory} />);
-        const transporter = nodemailer.createTransport({ sendmail: true, newline: 'unix', path: '/usr/sbin/sendmail' });
-        try {
-            await transporter.sendMail({
-                from: 'abode@illinois.edu',
-                to: 'abode@illinois.edu',
-                subject: `ChatWith${env.SYSTEM_NAME} Conversation`,
-                text: plainText,
-                html: htmlContent,
-            });
-            setHistory(prev => [...prev, { role: 'assistant', content: 'Email sent to abode@illinois.edu' }]);
-        } catch (err: any) {
-            setHistory(prev => [...prev, { role: 'assistant', content: `Failed to send email: ${err.message}` }]);
-        }
-        setInput('');
-    }
-}
-
-// React Email template for conversation HTML
-type ConversationEmailProps = { messages: ChatMessageT[] };
-const ConversationEmail = ({ messages }: ConversationEmailProps) => (
-    <html>
-        <head>
-            <meta charSet="utf-8" />
-            <title>ChatWith{env.SYSTEM_NAME} Conversation</title>
-        </head>
-        <body style={{ fontFamily: 'Arial, sans-serif', padding: '20px' }}>
-            <h1>ChatWith Conversation</h1>
-            {messages.map((msg, i) => (
-                <p key={i}>
-                    <strong>{msg.role}:</strong> {msg.content}
-                </p>
-            ))}
-        </body>
-    </html>
-);
 
 
 export const App: FC = () => {
@@ -202,25 +99,6 @@ export const App: FC = () => {
             retrieval_only: false,
         };
 
-        // fetch(endpoint, {
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //     },
-        //     body: JSON.stringify(requestData),
-        // })
-        // .then(response => response.json())
-        // .then(data => {
-        // // Print just the message
-        // const aiMessage: ChatMessageT = {
-        //     role: 'assistant',
-        //     content: data.message,
-        // };
-        // extendHistory([userMessage, aiMessage]);
-        // })
-        // .catch(error => {
-        // console.error('Error:', error);
-        // });
         // Stream the response and update the dynamic streamingContent
         const url = new URL(endpoint);
         const payload = JSON.stringify(requestData);
