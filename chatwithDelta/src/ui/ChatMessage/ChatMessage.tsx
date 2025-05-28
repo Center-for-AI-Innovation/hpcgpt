@@ -19,7 +19,8 @@ export const ChatMessage = (props: ChatMessageT) => {
         <Box width={boxWidth} borderStyle="round" flexDirection="column" alignItems={alignItems}>
             <Text>{props.role}:</Text>
             {props.role === "assistant" ? (
-                <Text>{parse(props.content).trim()}</Text>
+                // parse returns string | Promise<string>, but with async disabled it is string
+                <Text>{(parse(props.content) as string).trim()}</Text>
             ) : (
                 <Text>{props.content}</Text>
             )}

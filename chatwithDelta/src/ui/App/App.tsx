@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { Box, Text, useStdout, Static } from 'ink';
+import SelectInput from 'ink-select-input';
 import https from 'https';
 import nodemailer from 'nodemailer';
 import { render } from '@react-email/render';
@@ -51,7 +52,10 @@ class HelpCommand extends SlashCommand {
         const userEntry: ChatMessageT = { role: 'user', content: '/' + this.name + (args.length ? ' ' + args.join(' ') : '') };
         setHistory(prev => [...prev, userEntry]);
         // build help text
-        const helpText = commands.map(c => `/${c.name} - ${c.description}`).join('\n');
+        // Build help text, including /model command
+        const helpLines = commands.map(c => `/${c.name} - ${c.description}`);
+        helpLines.push('/model - Select chat model');
+        const helpText = helpLines.join('\n');
         setHistory(prev => [...prev, { role: 'assistant', content: helpText }]);
         setInput('');
     }
@@ -120,6 +124,17 @@ export const App: FC = () => {
     const [history, setHistory] = useState<ChatMessageT[]>([{ role: 'assistant', content: 'Hello, I am a chatbot. What can I help you with?' }]);
     // Streaming assistant content (dynamic)
     const [streamingContent, setStreamingContent] = useState<string | null>(null);
+    // Model selection state
+    const [selectingModel, setSelectingModel] = useState<boolean>(false);
+    const modelOptions: string[] = [
+        'llama3.1:8b-instruct-fp16',
+        'Qwen/Qwen2.5-VL-72B-Instruct',
+        'qwen2.5:7b-instruct-fp16',
+        'qwen2.5:14b-instruct-fp16',
+        'deepseek-r1:14b-qwen-distill-fp16',
+        'gpt-4.1-mini',
+    ];
+    const [model, setModel] = useState<string>(modelOptions[0]!);
 
 
     const { stdout } = useStdout();
@@ -133,18 +148,32 @@ export const App: FC = () => {
     const dynamicMessage: ChatMessageT | null = waiting && streamingContent !== null
         ? { role: 'assistant', content: streamingContent }
         : null;
+    // Handler for SelectInput selection
+    const handleModelSelect = (item: { label: string; value: string }) => {
+        setModel(item.value);
+        setHistory(prev => [...prev, { role: 'assistant', content: `Model set to ${item.value}` }]);
+        setSelectingModel(false);
+    };
     const onSubmit = async () => {
-        // Handle slash commands (e.g., /help, /email)
         const trimmed = input.trim();
+        // Slash commands
         if (trimmed.startsWith('/')) {
             const parts = trimmed.slice(1).split(/\s+/);
             const name = parts[0];
             const args = parts.slice(1);
+            // /model: enter selection mode
+            if (name === 'model') {
+                setHistory(prev => [...prev, { role: 'user', content: trimmed }]);
+                setHistory(prev => [...prev, { role: 'assistant', content: 'Select a model:' }]);
+                setSelectingModel(true);
+                setInput('');
+                return;
+            }
+            // other slash commands
             const cmd = commands.find(c => c.name === name);
             if (cmd) {
                 await cmd.execute({ args, history, setHistory, setInput, commands });
             } else {
-                // unknown command
                 setHistory(prev => [
                     ...prev,
                     { role: 'user', content: trimmed },
@@ -164,7 +193,7 @@ export const App: FC = () => {
         // Prepare API request data
         const endpoint = 'https://uiuc.chat/api/chat-api/chat';
         const requestData = {
-            model: 'Qwen/Qwen2.5-VL-72B-Instruct',
+            model: model,
             messages: [...history, userMessage],
             api_key: env.UIUC_API_KEY,
             course_name: env.UIUC_COURSE_NAME,
@@ -249,6 +278,8 @@ export const App: FC = () => {
         );
     };
 
+    // Render completed messages
+    // Then either the model selector or live chat UI
     return (
         <>
             <Static items={staticHistory}>
@@ -262,15 +293,30 @@ export const App: FC = () => {
                     </Box>
                 )}
             </Static>
-            {dynamicMessage && (
-                <Box
-                    width={terminalWidth}
-                    justifyContent={dynamicMessage.role === 'user' ? 'flex-end' : 'flex-start'}
-                >
-                    <ChatMessage {...dynamicMessage} />
-                </Box>
+            {selectingModel ? (
+                // Interactive model selection
+                <>
+                    <Box width={terminalWidth} justifyContent="flex-start">
+                        <SelectInput
+                            items={modelOptions.map(opt => ({ label: opt, value: opt }))}
+                            onSelect={handleModelSelect}
+                        />
+                    </Box>
+                </>
+            ) : (
+                // Live streaming or prompt
+                <>
+                    {dynamicMessage && (
+                        <Box
+                            width={terminalWidth}
+                            justifyContent={dynamicMessage.role === 'user' ? 'flex-end' : 'flex-start'}
+                        >
+                            <ChatMessage {...dynamicMessage} />
+                        </Box>
+                    )}
+                    <Prompt />
+                </>
             )}
-            <Prompt />
         </>
     );
 }
