@@ -116,19 +116,23 @@ const ConversationEmail = ({ messages }: ConversationEmailProps) => (
 export const App: FC = () => {
     const [input, setInput] = useState<string>('');
     const [waiting, setWaiting] = useState<boolean>(false);
-    const [history, setHistory] = useState<ChatMessageT[]>([{
-        role: 'assistant',
-        content: 'Hello, I am a chatbot. What can I help you with?'
-    }]);
+    // Completed chat history (static messages)
+    const [history, setHistory] = useState<ChatMessageT[]>([{ role: 'assistant', content: 'Hello, I am a chatbot. What can I help you with?' }]);
+    // Streaming assistant content (dynamic)
+    const [streamingContent, setStreamingContent] = useState<string | null>(null);
 
 
     const { stdout } = useStdout();
     const terminalWidth = stdout.columns || 80;
     // Initialize slash commands
     const commands: SlashCommand[] = [new HelpCommand(), new EmailCommand()];
-    // Separate history into static (printed once) and dynamic (streaming) parts
-    const staticHistory = waiting ? history.slice(0, history.length - 1) : history;
-    const dynamicMessage = waiting ? history[history.length - 1] : null;
+    // Separate history into static and dynamic parts for rendering
+    // Static history is all completed messages
+    const staticHistory = history;
+    // Dynamic message shown only while streaming
+    const dynamicMessage: ChatMessageT | null = waiting && streamingContent !== null
+        ? { role: 'assistant', content: streamingContent }
+        : null;
     const onSubmit = async () => {
         // Handle slash commands (e.g., /help, /email)
         const trimmed = input.trim();
@@ -150,14 +154,14 @@ export const App: FC = () => {
             }
             return;
         }
+        // Begin streaming request
         setWaiting(true);
-
-        const userMessage: ChatMessageT = {
-            role: "user",
-            content: input,
-        };
-
-        // Call UIUC Chat API
+        const userMessage: ChatMessageT = { role: 'user', content: input };
+        // Add user message to history
+        setHistory(prev => [...prev, userMessage]);
+        // Reset streaming content
+        setStreamingContent('');
+        // Prepare API request data
         const endpoint = 'https://uiuc.chat/api/chat-api/chat';
         const requestData = {
             model: 'Qwen/Qwen2.5-VL-72B-Instruct',
@@ -188,13 +192,12 @@ export const App: FC = () => {
         // .catch(error => {
         // console.error('Error:', error);
         // });
-        // Add the user's message and a placeholder for the assistant
-        setHistory(prev => [...prev, userMessage, { role: 'assistant', content: '' }]);
-
-        // Stream the response and update the last message chunk by chunk
+        // Stream the response and update the dynamic streamingContent
         const url = new URL(endpoint);
         const payload = JSON.stringify(requestData);
 
+        // Accumulate full response text
+        let fullResponse = '';
         await new Promise<void>((resolve) => {
             const req = https.request(
                 {
@@ -209,15 +212,8 @@ export const App: FC = () => {
                 (response) => {
                     response.on('data', (chunk) => {
                         const token = chunk.toString('utf8');
-                        setHistory(prevHistory => {
-                            const newHistory = [...prevHistory];
-                            const last = newHistory[newHistory.length - 1]!;
-                            newHistory[newHistory.length - 1] = {
-                                role: last.role,
-                                content: last.content + token,
-                            };
-                            return newHistory;
-                        });
+                        fullResponse += token;
+                        setStreamingContent(fullResponse);
                     });
                     response.on('end', () => resolve());
                 }
@@ -227,6 +223,9 @@ export const App: FC = () => {
             req.end();
         });
 
+        // Streaming complete: finalize assistant message
+        setHistory(prev => [...prev, { role: 'assistant', content: fullResponse }]);
+        setStreamingContent(null);
         setWaiting(false);
         setInput('');
     };
