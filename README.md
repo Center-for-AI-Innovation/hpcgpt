@@ -17,6 +17,7 @@ npm install
 ```
 
 ```bash
+export EMAIL_TARGET="your_email"
 export SYSTEM_NAME="Delta"
 export UIUC_API_KEY="your_uiuc_api_key"
 export UIUC_COURSE_NAME="Delta-Documentation"
