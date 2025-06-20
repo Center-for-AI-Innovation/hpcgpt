@@ -1,10 +1,10 @@
 import { SlashCommand } from './SlashCommand.js';
 import type { Dispatch, SetStateAction } from 'react';
-import type { ChatMessageT } from '../../types.js';
-import { env } from '../../../env.js';
+import { env } from '../../env.js'; // ← Try this path instead
 import nodemailer from 'nodemailer';
 import React from 'react';
 import { render } from '@react-email/render';
+import type { ChatMessageT } from '../types.js';
 
 /**
  * Props for the HTML email conversation template.
@@ -20,10 +20,10 @@ const ConversationEmail = ({ messages }: ConversationEmailProps) => (
   <html>
     <head>
       <meta charSet='utf-8' />
-      <title>{`ChatWith${env.SYSTEM_NAME} Conversation`}</title>
+      <title>{`ChatWith${env.SYSTEM_NAME || 'Delta'} Conversation`}</title>
     </head>
     <body style={{ fontFamily: 'Arial, sans-serif', padding: '20px' }}>
-      <h1>{`ChatWith${env.SYSTEM_NAME} Conversation`}</h1>
+      <h1>{`ChatWith${env.SYSTEM_NAME || 'Delta'} Conversation`}</h1>
       {messages.map((msg, i) => (
         <p key={i}>
           <strong>{msg.role}:</strong> {msg.content}
@@ -75,14 +75,14 @@ export class EmailCommand extends SlashCommand {
     try {
       await transporter.sendMail({
         from: 'abode@illinois.edu',
-        to: env.EMAIL_TARGET,
-        subject: `ChatWith${env.SYSTEM_NAME} Conversation`,
+        to: env.EMAIL_TARGET || 'abode@illinois.edu',
+        subject: `ChatWith${env.SYSTEM_NAME || 'Delta'} Conversation`,
         text: plainText,
         html: htmlContent,
       });
       setHistory((prev) => [
         ...prev,
-        { role: 'assistant', content: 'Email sent to abode@illinois.edu' },
+        { role: 'assistant', content: `Email sent successfully to ${env.EMAIL_TARGET}` },
       ]);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);

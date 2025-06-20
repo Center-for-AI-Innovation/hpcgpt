@@ -1,4 +1,4 @@
 export type ChatMessageT = {
-    role: 'user' | 'assistant';
+    role: "user" | "assistant" | "system";
     content: string;
-}; 
+}

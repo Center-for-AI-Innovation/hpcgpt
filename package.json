@@ -1,0 +1,26 @@
+{
+    "name": "hpcgpt",
+    "version": "1.0.0",
+    "description": "HPCGPT CLI",
+    "type": "module",
+    "private": true,
+    "workspaces": [
+        "chatwithDelta"
+    ],
+    "scripts": {
+        "start": "npm --workspace=chatwithDelta run start",
+        "dev": "npm --workspace=chatwithDelta run dev",
+        "build": "npm --workspace=chatwithDelta run build",
+        "setup": "npm install --workspace=chatwithDelta"
+    },
+    "engines": {
+        "node": ">=16"
+    },
+    "dependencies": {
+        "@react-email/render": "^1.1.2",
+        "nodemailer": "^7.0.3"
+    },
+    "devDependencies": {
+        "@types/nodemailer": "^6.4.17"
+    }
+}

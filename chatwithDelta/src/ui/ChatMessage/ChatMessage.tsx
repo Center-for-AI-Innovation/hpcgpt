@@ -1,29 +1,18 @@
-import React from "react";
+import React from 'react';
+import { Box, Text } from 'ink';
 
-import { Box, Text, useStdout } from "ink";
-// Render markdown using marked + marked-terminal to avoid CJS require issues
-import { parse, setOptions } from "marked";
-import TerminalRenderer from "marked-terminal";
-
-// Configure marked to use terminal renderer once per module
-setOptions({ renderer: new TerminalRenderer() as any });
-import { ChatMessageT } from "../index.js";
-
-export const ChatMessage = (props: ChatMessageT) => {
-    // Compute 75% of terminal width for message box
-    const { stdout } = useStdout();
-    const termWidth = stdout.columns || 80;
-    const boxWidth = Math.floor(termWidth * 0.75);
-    const alignItems = props.role === "user" ? "flex-end" : "flex-start";
-    return (
-        <Box width={boxWidth} borderStyle="round" flexDirection="column" alignItems={alignItems}>
-            <Text>{props.role}:</Text>
-            {props.role === "assistant" ? (
-                // parse returns string | Promise<string>, but with async disabled it is string
-                <Text>{(parse(props.content) as string).trim()}</Text>
-            ) : (
-                <Text>{props.content}</Text>
-            )}
-        </Box>
-    );
+type ChatMessageProps = {
+  role: 'user' | 'assistant';
+  content: string;
 };
+
+export const ChatMessage: React.FC<ChatMessageProps> = ({ role, content }) => (
+  <Box flexDirection="column" marginBottom={1}>
+    <Text color={role === 'user' ? 'red' : 'blue'} bold>
+      {role === 'user' ? 'User' : 'Assistant'}:
+    </Text>
+    <Box borderStyle="round" borderColor={role === 'user' ? 'red' : 'blue'} padding={1}>
+      <Text>{content}</Text>
+    </Box>
+  </Box>
+);
