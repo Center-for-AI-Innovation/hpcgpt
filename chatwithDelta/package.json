@@ -5,15 +5,20 @@
     "bin": "dist/index.js",
     "type": "module",
     "engines": {
-        "node": ">=16"
+        "node": ">=16",
+        "bun": ">=1.0.0"
     },
     "scripts": {
-        "dev": "ts-node-dev -r tsconfig-paths/register --respawn --no-pretty --exit-child src/index.tsx",
-        "build": "tsc && chmod +x dist/index.js",
-        "start": "npm run build && node dist/index.js",
-        "pretest": "npm run build"
+        "build": "bun build --target bun index.tsx --outdir dist",
+        "start": "bun run src/index.tsx",
+        "dev": "bun --watch src/index.tsx",
+        "pretest": "bun run build"
     },
     "dependencies": {
+        "@langchain/core": "^0.3.61",
+        "@langchain/langgraph": "^0.3.5",
+        "@langchain/community": "^0.3.47",
+        "langchain": "^0.3.29",
         "@react-email/render": "^1.1.2",
         "@types/better-sqlite3": "^7.6.13",
         "better-sqlite3": "^11.10.0",

@@ -8,19 +8,16 @@
         "chatwithDelta"
     ],
     "scripts": {
-        "start": "npm --workspace=chatwithDelta run start",
-        "dev": "npm --workspace=chatwithDelta run dev",
-        "build": "npm --workspace=chatwithDelta run build",
-        "setup": "npm install --workspace=chatwithDelta"
+        "start": "cd chatwithDelta && bun start",
+        "dev": "cd chatwithDelta && bun dev",
+        "build": "cd chatwithDelta && bun run build",
+        "setup": "bun install"
     },
     "engines": {
         "node": ">=16"
     },
-    "dependencies": {
-        "@react-email/render": "^1.1.2",
-        "nodemailer": "^7.0.3"
-    },
     "devDependencies": {
-        "@types/nodemailer": "^6.4.17"
+        "@types/nodemailer": "^6.4.17",
+        "typescript": "^5.0.3"
     }
 }
