@@ -7,6 +7,7 @@ import { FC, useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { SlashCommand } from '../commands/SlashCommand.js';
 import { EmailCommand } from '../commands/EmailCommand.js';
 import { ClearCommand } from '../commands/ClearCommand.js';
+import { SlurmCommand } from '../commands/SlurmCommand.js';
 import { env } from '../../env.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -57,9 +58,11 @@ const callPrehostedModel = async (messages: any[], systemPrompt?: string): Promi
         const requestData = {
             model: PREHOSTED_MODEL,
             messages: formattedMessages,
-            max_tokens: 1500,
-            temperature: 0.3,
+            api_key: env.UIUC_API_KEY,
+            course_name: env.UIUC_COURSE_NAME,
             stream: false,
+            temperature: 0.3,
+            retrieval_only: false
         };
 
         const url = new URL(PREHOSTED_API_URL);
@@ -77,15 +80,37 @@ const callPrehostedModel = async (messages: any[], systemPrompt?: string): Promi
                 response.on('data', (chunk) => data += chunk);
                 response.on('end', () => {
                     try {
+                        if (!data || data.trim() === '') {
+                            console.log('Empty response received from model');
+                            resolve('Empty response from model');
+                            return;
+                        }
+                        
                         const parsed = JSON.parse(data);
-                        const content = parsed.choices?.[0]?.message?.content || 
+                        console.log('Parsed response keys:', Object.keys(parsed));
+                        
+                        // Use the correct response field for Illinois endpoint
+                        const content = parsed.message || 
+                                      parsed.choices?.[0]?.message?.content || 
                                       parsed.response || 
                                       parsed.content || 
                                       'No response from model';
-                        resolve(content);
+                        
+                        if (!content || content.trim() === '') {
+                            console.log('No content found in response, using fallback');
+                            resolve('Model returned empty response');
+                        } else {
+                            resolve(content);
+                        }
                     } catch (error) {
-                        console.log('Failed to parse response, returning raw:', data.slice(0, 100));
-                        resolve(data);
+                        console.log('Failed to parse JSON response:', error);
+                        console.log('Raw response data:', data.slice(0, 200));
+                        // Try to extract useful content from non-JSON response
+                        if (data && typeof data === 'string' && data.trim().length > 0) {
+                            resolve(data.trim());
+                        } else {
+                            resolve('Error: Could not parse model response');
+                        }
                     }
                 });
             });
@@ -291,20 +316,21 @@ Examples:
 const routerNode = async (state: typeof GraphState.State) => {
     console.log('Router Node');
     
-    const lastMessage = state.messages[state.messages.length - 1];
-    const query = lastMessage && lastMessage.content ? lastMessage.content as string : '';
-    const originalQuery = state.originalQuery;
-    
-    // Check what has already been done
-    const completedActions = state.messages
-        .filter(msg => msg instanceof AIMessage)
-        .map(msg => msg.content as string)
-        .join(' ');
-    
-    const hasDocsInfo = completedActions.includes('DOCS:');
-    const hasShellExecution = completedActions.includes('SHELL:');
-    
-    const systemPrompt = `You are a smart routing assistant that understands multi-step tasks. 
+    try {
+        const lastMessage = state.messages[state.messages.length - 1];
+        const query = lastMessage && lastMessage.content ? lastMessage.content as string : '';
+        const originalQuery = state.originalQuery;
+        
+        // Check what has already been done
+        const completedActions = state.messages
+            .filter(msg => msg instanceof AIMessage)
+            .map(msg => msg.content as string)
+            .join(' ');
+        
+        const hasDocsInfo = completedActions.includes('DOCS:');
+        const hasShellExecution = completedActions.includes('SHELL:');
+        
+        const systemPrompt = `You are a smart routing assistant that understands multi-step tasks. 
 
 CONTEXT:
 - Original query: "${originalQuery}"
@@ -328,18 +354,48 @@ ${hasDocsInfo && !hasShellExecution ?
 
 Respond with ONLY one word: "docs", "shell", or "chat"`;
 
-    const response = await callPrehostedModel(
-        [{ role: 'user', content: query }], 
-        systemPrompt
-    );
-    
-    const action = response.trim().toLowerCase();
-    console.log(`Router decision: ${action} (Has docs: ${hasDocsInfo}, Has shell: ${hasShellExecution})`);
-    
-    return {
-        lastAction: action,
-        iterationCount: state.iterationCount + 1,
-    };
+        const response = await callPrehostedModel(
+            [{ role: 'user', content: query }], 
+            systemPrompt
+        );
+        
+        const rawAction = response.trim().toLowerCase();
+        console.log(`Router raw response: "${rawAction}" (Has docs: ${hasDocsInfo}, Has shell: ${hasShellExecution})`);
+        
+        // Validate and normalize the action
+        let action: string;
+        if (rawAction.includes('docs') || rawAction.includes('documentation')) {
+            action = 'docs';
+        } else if (rawAction.includes('shell') || rawAction.includes('execute') || rawAction.includes('command')) {
+            action = 'shell';
+        } else if (rawAction.includes('chat') || rawAction.includes('conversation')) {
+            action = 'chat';
+        } else {
+            // Fallback logic based on context
+            console.log(`Unknown router response: "${rawAction}", falling back to context analysis`);
+            if (!hasDocsInfo && (originalQuery.toLowerCase().includes('what') || originalQuery.toLowerCase().includes('how') || originalQuery.toLowerCase().includes('explain'))) {
+                action = 'docs';
+            } else if (originalQuery.toLowerCase().includes('check') || originalQuery.toLowerCase().includes('show') || originalQuery.toLowerCase().includes('run') || originalQuery.toLowerCase().includes('execute')) {
+                action = 'shell';
+            } else {
+                action = 'chat';
+            }
+        }
+        
+        console.log(`Router final decision: ${action}`);
+        
+        return {
+            lastAction: action,
+            iterationCount: state.iterationCount + 1,
+        };
+    } catch (error: any) {
+        console.log('Error in router node:', error.message);
+        // Fallback to chat on any error
+        return {
+            lastAction: 'chat',
+            iterationCount: state.iterationCount + 1,
+        };
+    }
 };
 
 // IMPROVED COMPLETION NODE
@@ -348,6 +404,24 @@ const completionNode = async (state: typeof GraphState.State) => {
     
     try {
         const originalQuery = state.originalQuery;
+        const iterationCount = state.iterationCount;
+        
+        // Safety check: if we've done too many iterations, force completion
+        if (iterationCount >= 4) {
+            console.log('Max iterations reached in completion check, forcing completion');
+            return {
+                taskCompleted: true,
+            };
+        }
+        
+        // If taskCompleted was already set by a node, respect it
+        if (state.taskCompleted) {
+            console.log('Task already marked as completed by previous node');
+            return {
+                taskCompleted: true,
+            };
+        }
+        
         const conversation = state.messages
             .filter(msg => msg instanceof AIMessage)
             .map(m => m.content)
@@ -358,46 +432,26 @@ const completionNode = async (state: typeof GraphState.State) => {
         const hasShellExecution = conversation.includes('SHELL:');
         const hasChatResponse = conversation.includes('CHAT:');
         
-        const systemPrompt = `You are a task completion validator. Analyze if the user's original request has been COMPLETELY fulfilled.
-
-ORIGINAL REQUEST: "${originalQuery}"
-
-COMPLETED ACTIONS:
-- Documentation searched: ${hasDocsInfo ? 'YES' : 'NO'}
-- Commands executed: ${hasShellExecution ? 'YES' : 'NO'}  
-- Chat response given: ${hasChatResponse ? 'YES' : 'NO'}
-
-COMPLETION RULES:
-1. INFORMATION-ONLY queries (what/how/explain) → Need docs OR chat response
-   Examples: "what are slurm commands" → docs sufficient ✅
-   
-2. ACTION queries (check/show/create/run/execute) → Need BOTH docs + shell execution  
-   Examples: "check my memory allocation" → need docs to learn command + shell to execute ✅
-   
-3. DIRECT COMMANDS → Need shell execution only
-   Examples: "create directory test" → shell sufficient ✅
-
-ANALYSIS:
-- Does "${originalQuery}" require just information? → ${hasDocsInfo || hasChatResponse ? 'SATISFIED' : 'NEEDS_MORE'}
-- Does "${originalQuery}" require action/execution? → ${hasShellExecution ? 'SATISFIED' : 'NEEDS_EXECUTION'}
-
-Respond ONLY "YES" if completely finished or "NO" if more work needed.`;
-
-        const userPrompt = `Based on the rules above, is the original query "${originalQuery}" COMPLETELY satisfied?
-
-What was accomplished:
-${conversation}
-
-Answer: YES or NO only.`;
+        // Simplified completion logic - be more lenient
+        let isCompleted = false;
         
-        const response = await callPrehostedModel(
-            [{ role: 'user', content: userPrompt }], 
-            systemPrompt
-        );
+        // Simple queries that just need a response
+        if (hasChatResponse || hasDocsInfo || hasShellExecution) {
+            isCompleted = true;
+            console.log('Task completed: At least one response type provided');
+        }
         
-        const isCompleted = response.trim().toLowerCase().includes('yes');
+        // For action queries, check if shell was executed
+        if (originalQuery.toLowerCase().includes('check') || 
+            originalQuery.toLowerCase().includes('show') || 
+            originalQuery.toLowerCase().includes('run') ||
+            originalQuery.toLowerCase().includes('execute')) {
+            isCompleted = hasShellExecution;
+            console.log(`Action query completion: ${isCompleted ? 'Shell executed' : 'Shell needed'}`);
+        }
+        
         console.log(`Completion check: ${isCompleted ? 'COMPLETED' : 'CONTINUE'}`);
-        console.log(`Analysis: Docs=${hasDocsInfo}, Shell=${hasShellExecution}, Decision=${response.trim()}`);
+        console.log(`Analysis: Docs=${hasDocsInfo}, Shell=${hasShellExecution}, Chat=${hasChatResponse}, Iteration=${iterationCount}`);
         
         return {
             taskCompleted: isCompleted,
@@ -405,7 +459,7 @@ Answer: YES or NO only.`;
     } catch (error: any) {
         console.log('Error in completion validator:', error.message);
         return {
-            taskCompleted: true, // Fail safe
+            taskCompleted: true, // Fail safe - prevent infinite loops
         };
     }
 };
@@ -508,15 +562,26 @@ Please provide a focused answer under 200 words.` }
 const chatNode = async (state: typeof GraphState.State) => {
     console.log('Chat Node');
     
-    // Use original query for chat too
-    const originalQuery = state.originalQuery;
-    
-    const response = await callPrehostedModel([{ role: 'user', content: originalQuery }]);
-    
-    return {
-        messages: [new AIMessage(`CHAT: ${response}`)],
-        lastAction: 'chat',
-    };
+    try {
+        // Use original query for chat too
+        const originalQuery = state.originalQuery;
+        
+        const response = await callPrehostedModel([{ role: 'user', content: originalQuery }]);
+        console.log('Chat response received:', response.slice(0, 100) + '...');
+        
+        return {
+            messages: [new AIMessage(`CHAT: ${response}`)],
+            lastAction: 'chat',
+            taskCompleted: true, // Mark chat queries as completed after response
+        };
+    } catch (error: any) {
+        console.log('Error in chat node:', error.message);
+        return {
+            messages: [new AIMessage(`CHAT: I apologize, but I encountered an error processing your request: ${error.message}`)],
+            lastAction: 'chat',
+            taskCompleted: true, // Even with errors, mark as completed to prevent loops
+        };
+    }
 };
 
 // ===== CONDITIONAL EDGES =====
@@ -545,7 +610,14 @@ const afterCompletion = (state: typeof GraphState.State): "router" | "__end__" =
 const routeToTool = (state: typeof GraphState.State): "docs" | "shell" | "chat" => {
     const action = state.lastAction;
     console.log(`Routing to: ${action}`);
-    return action as "docs" | "shell" | "chat";
+    
+    // Validate that action is one of the expected values
+    if (action === "docs" || action === "shell" || action === "chat") {
+        return action;
+    } else {
+        console.log(`Invalid routing action: "${action}", defaulting to chat`);
+        return "chat"; // Safe fallback
+    }
 };
 
 // ===== WORKFLOW CREATION =====
@@ -695,13 +767,14 @@ export const App: FC = () => {
 
     const { stdout } = useStdout();
     const terminalWidth = stdout.columns || 80;
-    const commands: SlashCommand[] = [new EmailCommand(), new ClearCommand()];
+    const commands: SlashCommand[] = [new EmailCommand(), new ClearCommand(), new SlurmCommand()];
     
     // MEMOIZED COMMAND SUGGESTIONS TO REDUCE RECALCULATIONS
     const commandSuggestions = useMemo(() => {
         const allCommands = [
             { name: 'email', description: 'Send an email' },
             { name: 'clear', description: 'Clear the chat history' },
+            { name: 'slurm', description: 'Query SLURM jobs and cluster information' },
             { name: 'help', description: 'Show available commands' }
         ];
         
