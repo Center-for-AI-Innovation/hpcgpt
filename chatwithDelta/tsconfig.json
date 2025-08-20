@@ -31,7 +31,11 @@
         "jsx": "react",
         "experimentalDecorators": true,
         "skipLibCheck": true,
-        "baseUrl": "./src"
+        "baseUrl": "./src",
+        "typeRoots": [
+            "./node_modules/@types",
+            "./src/types"
+        ]
     },
     "include": [
         "src/**/*",
