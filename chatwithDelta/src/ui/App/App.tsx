@@ -1,19 +1,18 @@
-import React from 'react';
-import { Box, Text, useStdout } from 'ink';
-import https from 'https';
-import { URL } from 'url';
-import { ChatMessageT, TextBox } from '../index.js';
-import { FC, useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { SlashCommand } from '../commands/SlashCommand.js';
-import { EmailCommand } from '../commands/EmailCommand.js';
-import { ClearCommand } from '../commands/ClearCommand.js';
-import { env } from '../../env.js';
 import { exec } from 'child_process';
+import https from 'https';
+import { Box, Text, useStdout } from 'ink';
+import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
+import { URL } from 'url';
 import { promisify } from 'util';
+import { env } from '../../env.js';
+import { ClearCommand } from '../commands/ClearCommand.js';
+import { EmailCommand } from '../commands/EmailCommand.js';
+import { SlashCommand } from '../commands/SlashCommand.js';
+import { ChatMessageT, TextBox } from '../index.js';
 
 // LangGraph.js imports
-import { StateGraph, Annotation, START, END } from '@langchain/langgraph';
-import { BaseMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
+import { AIMessage, BaseMessage, HumanMessage } from '@langchain/core/messages';
+import { Annotation, END, START, StateGraph } from '@langchain/langgraph';
 
 const execAsync = promisify(exec);
 
@@ -63,15 +62,27 @@ const callPrehostedModel = async (messages: any[], systemPrompt?: string): Promi
         };
 
         const url = new URL(PREHOSTED_API_URL);
+        // Ensure we hit a chat completion-like endpoint if a base URL is provided
+        let requestPath = url.pathname;
+        if (!requestPath || requestPath === "/") {
+            requestPath = "/v1/chat/completions";
+        } else if (!requestPath.includes("/chat/completions")) {
+            requestPath = requestPath.endsWith("/") ? `${requestPath}chat/completions` : `${requestPath}/chat/completions`;
+        }
         const payload = JSON.stringify(requestData);
 
         const result = await new Promise<string>((resolve) => {
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            // Use OPENAI_API_KEY if present (common for OpenAI-compatible endpoints)
+            if (process.env['OPENAI_API_KEY']) {
+                headers['Authorization'] = `Bearer ${process.env['OPENAI_API_KEY']}`;
+            }
             const req = https.request({
                 hostname: url.hostname,
                 port: url.port || (url.protocol === 'https:' ? 443 : 80),
-                path: url.pathname,
+                path: requestPath,
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
             }, (response) => {
                 let data = '';
                 response.on('data', (chunk) => data += chunk);
@@ -334,10 +345,15 @@ Respond with ONLY one word: "docs", "shell", or "chat"`;
     );
     
     const action = response.trim().toLowerCase();
-    console.log(`Router decision: ${action} (Has docs: ${hasDocsInfo}, Has shell: ${hasShellExecution})`);
+    const allowed: Array<'docs' | 'shell' | 'chat'> = ['docs', 'shell', 'chat'];
+    const chosen = (allowed as string[]).includes(action) ? (action as 'docs' | 'shell' | 'chat') : 'chat';
+    if (chosen !== action) {
+        console.log(`Router decision invalid (${action}); defaulting to "${chosen}"`);
+    }
+    console.log(`Router decision: ${chosen} (Has docs: ${hasDocsInfo}, Has shell: ${hasShellExecution})`);
     
     return {
-        lastAction: action,
+        lastAction: chosen,
         iterationCount: state.iterationCount + 1,
     };
 };
@@ -543,9 +559,11 @@ const afterCompletion = (state: typeof GraphState.State): "router" | "__end__" =
 };
 
 const routeToTool = (state: typeof GraphState.State): "docs" | "shell" | "chat" => {
-    const action = state.lastAction;
-    console.log(`Routing to: ${action}`);
-    return action as "docs" | "shell" | "chat";
+    const action = (state.lastAction || '').toLowerCase();
+    const allowed: Array<'docs' | 'shell' | 'chat'> = ['docs', 'shell', 'chat'];
+    const chosen = (allowed as string[]).includes(action) ? (action as 'docs' | 'shell' | 'chat') : 'chat';
+    console.log(`Routing to: ${chosen}`);
+    return chosen;
 };
 
 // ===== WORKFLOW CREATION =====
