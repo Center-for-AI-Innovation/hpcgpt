@@ -1,12 +1,12 @@
 {
-  "name": "slurm-mcp-server",
+  "name": "HPCCode MCP Servers",
   "version": "1.0.0",
   "description": "MCP server that provides access to the accounts command",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "slurm-mcp-server": "node dist/index.js"
+    "slurm-mcp-server": "node mcp_servers/slurm_mcp_server/dist/index.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.7.0"
