@@ -1,0 +1,60 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    // Adding our Illinois chat Provider
+    "illinoischat": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Illinois Chat",
+      "options": {
+        "baseURL": "https://uiuc.chat/api/chat-api/chat",
+      },
+      "models": {
+        "Qwen/Qwen2.5-VL-72B-Instruct": {
+          "name": "Qwen 72B",
+          "options": {
+            "api_key":"{env:ILLINOIS_CHAT_API_KEY}",
+            "course_name":"{env:ILLINOIS_CHAT_COURSE}",
+            "temperature":0.1,
+            "stream":true
+          }
+        },
+        "deepseek-r1:14b-qwen-distill-fp16": {
+          "name": "Deepseek",
+          "options": {
+            "api_key":"{env:ILLINOIS_CHAT_API_KEY}",
+            "course_name":"{env:ILLINOIS_CHAT_COURSE}",
+            "temperature":0.1,
+            "stream":true
+          }
+        },
+        "llama3.1:8b-instruct-fp16": {
+          "name": "Llama3",
+          "options": {
+            "api_key":"{env:ILLINOIS_CHAT_API_KEY}",
+            "course_name":"{env:ILLINOIS_CHAT_COURSE}",
+            "temperature":0.1,
+            "stream":true
+          }
+        }
+      }
+    }
+  },
+  // I'm disabling sharing as i don't think this is a feature we want on Delta
+  "share": "disabled",
+  // Configure permissions to control what AI agents can do by default. 
+  "permission": {
+    "edit": "ask",
+    "bash": "ask"
+  },
+  // Can add MCP Servers with this field
+  "mcp": {
+    "slurm-mcp-server": {
+      "type": "local",
+      "command": ["bun", "run", "slurm-mcp-server"],
+      "enabled": true
+    }
+  },
+  "theme": "opencode"
+  // Can remove any providers we don't want with this field
+  //"disabled_providers": ["openai", "gemini"]
+}

@@ -1,4 +1,0 @@
-export type ChatMessageT = {
-    role: 'user' | 'assistant';
-    content: string;
-}; 
