@@ -52,6 +52,11 @@
       "type": "local",
       "command": ["bun", "run", "slurm-mcp-server"],
       "enabled": true
+    },
+    "illinois-chat-server": {
+      "type": "local",
+      "command": ["bun", "run", "illinois-chat-server"],
+      "enabled": true
     }
   },
   "theme": "opencode"

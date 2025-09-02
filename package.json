@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "slurm-mcp-server": "node mcp_servers/slurm_mcp_server/dist/index.js"
+    "slurm-mcp-server": "node mcp_servers/slurm_mcp_server/dist/index.js",
+    "illinois-chat-mcp-server": "node mcp_servers/illinois_chat_server/dist/index.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.7.0"
