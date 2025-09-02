@@ -1,5 +1,5 @@
 {
-  "name": "illinois-chat-server",
+  "name": "illinois-chat-mcp-server",
   "version": "1.0.0",
   "description": "MCP server that provides access to Illinois Chat API for Delta documentation queries",
   "main": "dist/index.js",

@@ -50,12 +50,12 @@
   "mcp": {
     "slurm-mcp-server": {
       "type": "local",
-      "command": ["bun", "run", "slurm-mcp-server"],
+      "command": ["bun", "run", "slurm-mcp-server", ">", "logs/slurm-mcp-server.log"],
       "enabled": true
     },
     "illinois-chat-server": {
       "type": "local",
-      "command": ["bun", "run", "illinois-chat-server"],
+      "command": ["bun", "run", "illinois-chat-mcp-server", ">", "logs/illinois-chat-server.log"],
       "enabled": true
     }
   },

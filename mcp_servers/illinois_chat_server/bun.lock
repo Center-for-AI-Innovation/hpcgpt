@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "illinois-chat-server",
+      "name": "illinois-chat-mcp-server",
       "dependencies": {
         "@modelcontextprotocol/sdk": "^0.7.0",
       },
