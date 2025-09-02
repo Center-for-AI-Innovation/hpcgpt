@@ -68,19 +68,38 @@ class IllinoisChatMCPServer {
         });
         this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
             const toolName = request.params.name;
+            const args = request.params.arguments;
+            
+            console.error(`[MCP] Tool called: ${toolName} with args:`, args);
+            
             try {
-                api_key = process.env.ILLINOIS_CHAT_API_KEY;
+                // Validate required environment variables
+                const api_key = process.env.ILLINOIS_CHAT_API_KEY;
+                if (!api_key) {
+                    throw new Error('ILLINOIS_CHAT_API_KEY environment variable is not set');
+                }
+                
+                // Extract message from arguments
+                const message = args.message;
+                if (!message) {
+                    throw new Error('Message parameter is required');
+                }
+                
+                let course_name;
                 switch (toolName) {
                     case 'delta-docs':
-                        course_name="Delta-Documentation";
+                        course_name = "Delta-Documentation";
                         break;
                     case 'delta-ai-docs':
-                        course_name="DeltaAI-Documentation";
+                        course_name = "DeltaAI-Documentation";
                         break;
                     default:
                         throw new Error(`Unknown tool: ${toolName}`);
                 }
+                
+                console.error(`[MCP] Calling Illinois Chat with course: ${course_name}, message: ${message.slice(0, 50)}...`);
                 const response = await this.callIllinoisChat(course_name, message);
+                
                 return {
                     content: [
                         {
@@ -107,33 +126,58 @@ class IllinoisChatMCPServer {
     }
     
     async callIllinoisChat(course_name, message) {
-        const systemPrompt = "You are a helpful assistant that can answer questions about the Delta and Delta AI documentation. You are also able to answer questions about the Delta and Delta AI software.";
-        const formattedMessages = [{ role: 'system', content: systemPrompt }, message]
-        
-        const request_data = {
-            model: "deepseek-r1:14b-qwen-distill-fp16",
-            messages: formattedMessages,
-            api_key: process.env.ILLINOIS_CHAT_API_KEY,
-            course_name: course_name,
-            stream: false,
-            temperature: 0.3,
-            retrieval_only: false
-        };
+        try {
+            const systemPrompt = "You are a helpful assistant that can answer questions about the Delta and Delta AI documentation. You are also able to answer questions about the Delta and Delta AI software.";
+            const formattedMessages = [
+                { role: 'system', content: systemPrompt }, 
+                { role: 'user', content: message }
+            ];
+            
+            const request_data = {
+                model: "deepseek-r1:14b-qwen-distill-fp16",
+                messages: formattedMessages,
+                api_key: process.env.ILLINOIS_CHAT_API_KEY,
+                course_name: course_name,
+                stream: false,
+                temperature: 0.3,
+                retrieval_only: false
+            };
 
-        fetch("https://uiuc.chat/api/chat-api/chat", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(request_data)
-        }).then(response => response.json())
-        .then(data => {
-            return data.choices[0].message.content;
-        })
-        .catch(error => {
+            console.error('[MCP] Making request to Illinois Chat API...');
+            
+            const response = await fetch("https://uiuc.chat/api/chat-api/chat", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(request_data)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.error('[MCP] Received response from Illinois Chat API');
+            
+            // Handle different response formats
+            let responseText;
+            if (data.message) {
+                responseText = data.message;
+            } else if (data.choices && data.choices[0] && data.choices[0].message) {
+                responseText = data.choices[0].message.content;
+            } else if (data.response) {
+                responseText = data.response;
+            } else {
+                console.error('[MCP] Unexpected response format:', data);
+                responseText = 'Received response but could not parse content';
+            }
+            
+            return responseText;
+        } catch (error) {
             console.error('[MCP] Error calling Illinois Chat:', error);
-        });
-        return response;
+            throw new Error(`Failed to call Illinois Chat API: ${error.message}`);
+        }
     }
     
     async run() {
