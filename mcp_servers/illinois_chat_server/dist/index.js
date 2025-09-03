@@ -6,10 +6,12 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 const execAsync = promisify(exec);
 
+const ILLINOIS_CHAT_MODEL = "Qwen/Qwen2.5-VL-72B-Instruct";
+
 // Define the tools
 const DELTA_DOCS_TOOL = {
     name: 'delta-docs',
-    description: 'Get information from the Delta documentation',
+    description: 'Get information about the Delta HPC system from the Delta documentation',
     inputSchema: {
         type: 'object',
         properties: {
@@ -24,7 +26,7 @@ const DELTA_DOCS_TOOL = {
 
 const DELTA_AI_DOCS_TOOL = {
     name: 'delta-ai-docs',
-    description: 'Get information from the Delta AI documentation',
+    description: 'Get information about the Delta AI system from the Delta AI documentation',
     inputSchema: {
         type: 'object',
         properties: {
@@ -134,7 +136,7 @@ class IllinoisChatMCPServer {
             ];
             
             const request_data = {
-                model: "deepseek-r1:14b-qwen-distill-fp16",
+                model: ILLINOIS_CHAT_MODEL,
                 messages: formattedMessages,
                 api_key: process.env.ILLINOIS_CHAT_API_KEY,
                 course_name: course_name,

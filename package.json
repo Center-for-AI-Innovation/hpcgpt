@@ -1,7 +1,7 @@
 {
   "name": "HPCCode MCP Servers",
   "version": "1.0.0",
-  "description": "MCP server that provides access to the accounts command",
+  "description": "MCP servers collection providing SLURM command access and Delta documentation queries",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
