@@ -1,10 +1,13 @@
 #!/usr/bin/env node
+
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+
 const execAsync = promisify(exec);
+
 // Define the accounts tool
 const ACCOUNTS_TOOL = {
     name: 'accounts',
@@ -21,6 +24,7 @@ const ACCOUNTS_TOOL = {
         additionalProperties: false
     }
 };
+
 // Define the sinfo tool
 const SINFO_TOOL = {
     name: 'sinfo',
@@ -37,6 +41,7 @@ const SINFO_TOOL = {
         additionalProperties: false
     }
 };
+
 // Define the squeue tool
 const SQUEUE_TOOL = {
     name: 'squeue',
@@ -53,6 +58,7 @@ const SQUEUE_TOOL = {
         additionalProperties: false
     }
 };
+
 // Define the scontrol tool
 const SCONTROL_TOOL = {
     name: 'scontrol',
@@ -73,8 +79,10 @@ const SCONTROL_TOOL = {
         additionalProperties: false
     }
 };
+
 class SlurmMCPServer {
-    server;
+    private server: Server;
+
     constructor() {
         this.server = new Server({
             name: 'delta-slurm-mcp',
@@ -84,63 +92,73 @@ class SlurmMCPServer {
                 tools: {},
             },
         });
+        
         this.setupToolHandlers();
         this.setupErrorHandling();
     }
-    setupErrorHandling() {
+
+    private setupErrorHandling(): void {
         this.server.onerror = (error) => {
             console.error('[MCP Error]', error);
         };
+
         process.on('SIGINT', async () => {
             await this.server.close();
             process.exit(0);
         });
     }
-    setupToolHandlers() {
+
+    private setupToolHandlers(): void {
         this.server.setRequestHandler(ListToolsRequestSchema, async () => {
             return {
                 tools: [ACCOUNTS_TOOL, SINFO_TOOL, SQUEUE_TOOL, SCONTROL_TOOL],
             };
         });
+
         this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
             const toolName = request.params.name;
+            
             if (toolName !== 'accounts' && toolName !== 'sinfo' && toolName !== 'squeue' && toolName !== 'scontrol') {
                 throw new Error(`Unknown tool: ${toolName}`);
             }
+
             try {
-                let command;
+                let command: string;
+                
                 if (toolName === 'scontrol') {
-                    const jobId = request.params.arguments?.job_id;
-                    const options = request.params.arguments?.options || '';
+                    const jobId = (request.params.arguments as any)?.job_id;
+                    const options = (request.params.arguments as any)?.options || '';
+                    
                     if (jobId) {
                         // If job_id is provided, use "scontrol show job <job_id>"
                         command = options ? `scontrol show job ${jobId} ${options}` : `scontrol show job ${jobId}`;
-                    }
-                    else if (options) {
+                    } else if (options) {
                         // If no job_id but options provided, use options directly (e.g., "show partition")
                         command = `scontrol ${options}`;
-                    }
-                    else {
+                    } else {
                         throw new Error('scontrol requires either a job_id or options parameter');
                     }
-                }
-                else {
+                } else {
                     // For other tools, use the original logic
-                    const options = request.params.arguments?.options || '';
+                    const options = (request.params.arguments as any)?.options || '';
                     command = options ? `${toolName} ${options}` : toolName;
                 }
+
                 console.error(`[MCP] Executing command: ${command}`);
+                
                 const { stdout, stderr } = await execAsync(command, {
                     timeout: 30000, // 30 second timeout
                     maxBuffer: 1024 * 1024 // 1MB buffer
                 });
+
                 if (stderr && stderr.trim()) {
                     console.error(`[MCP] Command stderr: ${stderr}`);
                 }
+
                 return {
                     content: [
                         {
-                            type: 'text',
+                            type: 'text' as const,
                             text: stdout || `No output from ${toolName} command`
                         }
                     ]
@@ -152,7 +170,7 @@ class SlurmMCPServer {
                 return {
                     content: [
                         {
-                            type: 'text',
+                            type: 'text' as const,
                             text: `Error executing ${toolName} command: ${errorMessage}`
                         }
                     ],
@@ -161,16 +179,17 @@ class SlurmMCPServer {
             }
         });
     }
-    async run() {
+
+    async run(): Promise<void> {
         const transport = new StdioServerTransport();
         await this.server.connect(transport);
         console.error('[MCP] Delta Slurm MCP server running on stdio');
     }
 }
+
 // Start the server
 const server = new SlurmMCPServer();
 server.run().catch((error) => {
     console.error('[MCP] Fatal error:', error);
     process.exit(1);
 });
-//# sourceMappingURL=index.js.map
