@@ -27,6 +27,27 @@
           }
         }
       }
+    },
+    "ncsaollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "NCSA Ollama",
+      "options": {
+        "baseURL": "https://ollama.uiuc.chat/v1"
+      },
+      "models": {
+        "deepseek-r1:14b-qwen-distill-fp16": {
+          "name": "DeepSeek R1",
+          "options": {
+            "stream":true
+          }
+        },
+        "gpt-oss:120b": {
+          "name": "GPT-OSS 120B",
+          "options": {
+            "stream":true
+          }
+        }
+      }
     }
   },
   // I'm disabling sharing as i don't think this is a feature we want on Delta
