@@ -12,12 +12,11 @@
       },
     },
   "provider": {
-    // Adding our Illinois chat Provider
     "ncsahosted": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "NCSA Hosted",
       "options": {
-        "baseURL": "https://llm.uiuc.chat/v1"
+        "baseURL": "{env:NCSA_LLM_URL}"
       },
       "models": {
         "Qwen/Qwen2.5-VL-72B-Instruct": {
@@ -32,11 +31,12 @@
       "npm": "@ai-sdk/openai-compatible",
       "name": "NCSA Ollama",
       "options": {
-        "baseURL": "https://ollama.uiuc.chat/v1"
+        "baseURL": "{env:NCSA_OLLAMA_URL}"
       },
       "models": {
-        "deepseek-r1:14b-qwen-distill-fp16": {
-          "name": "DeepSeek R1",
+        // Tested and works with mcp tools
+        "gpt-oss:20b": {
+          "name": "GPT-OSS 20B",
           "options": {
             "stream":true
           }
@@ -46,7 +46,58 @@
           "options": {
             "stream":true
           }
+        },
+        "qwen3:32b": {
+          "name": "Qwen 3 32B",
+          "options": {
+            "stream":true
+          }
+        },
+        // Incredibly slow
+        "llama3.1:70b-instruct-fp16": {
+          "name": "Llama 3.1 70B Instruct FP16",
+          "options": {
+            "stream":true
+          }
+        },
+        // Doesn't seem to know about mcp tools but no api error
+        "llama4:16x17b": {
+          "name": "Llama 4 16x17B",
+          "options": {
+            "stream":true
+          }
         }
+        // ### Doesn't support tools ###
+        // "deepseek-r1:14b-qwen-distill-fp16": {
+        //   "name": "DeepSeek R1 14B",
+        //   "options": {
+        //     "stream":true
+        //   }
+        // },
+        // "deepseek-r1:32b": {
+        //   "name": "DeepSeek R1 32B",
+        //   "options": {
+        //     "stream":true
+        //   }
+        // },
+        // "deepseek-r1:70b": {
+        //   "name": "DeepSeek R1 70B",
+        //   "options": {
+        //     "stream":true
+        //   }
+        // },
+        // "gemma3:27b": {
+        //   "name": "Gemma 3 27B",
+        //   "options": {
+        //     "stream":true
+        //   }
+        // },
+        // "llama-guard3:8b": {
+        //   "name": "Llama Guard 3 8B",
+        //   "options": {
+        //     "stream":true
+        //   }
+        // },  
       }
     }
   },
