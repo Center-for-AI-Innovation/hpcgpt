@@ -57,60 +57,40 @@ function mapPlatform() {
   return { os, arch }
 }
 
-// We no longer distribute platform packages on npm. Prefer a previously installed binary in cache.
-function cacheBinaryPath() {
-  const dir = process.platform === "win32"
-    ? path.join(process.env.LOCALAPPDATA || path.join(process.env.USERPROFILE || __dirname, "AppData", "Local"), "hpcgpt", "bin")
-    : path.join(process.env.XDG_DATA_HOME || path.join(process.env.HOME || "/tmp", ".local", "share"), "hpcgpt", "bin")
-  return path.join(dir, process.platform === "win32" ? "hpcgpt.exe" : "hpcgpt")
+function defaultOpencodePath() {
+  if (process.platform === "win32") return null
+  const home = process.env.HOME || "/tmp"
+  return path.join(home, ".opencode", "bin", "opencode")
 }
 
-async function ensureCachedBinary() {
-  const bin = cacheBinaryPath()
-  try {
-    await fs.promises.mkdir(path.dirname(bin), { recursive: true })
-  } catch {}
-  if (fs.existsSync(bin)) return bin
-  const { os, arch } = mapPlatform()
-  const version = getPackageVersion()
-  const fileName = `hpcgpt-${os}-${arch}` + (os === "windows" ? ".exe" : ".bin")
-  const url = `https://github.com/Center-for-AI-Innovation/hpcgpt/releases/download/v${version}/${fileName}`
-  await download(url, bin)
-  if (process.platform !== "win32") await fs.promises.chmod(bin, 0o755)
-  return bin
-}
-
-function getPackageVersion() {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const pj = JSON.parse(fs.readFileSync(path.join(cliRoot, "package.json"), "utf8"))
-    return pj.version || "latest"
-  } catch {
-    return "latest"
+function findOpencode() {
+  const candidates = [
+    process.env.OPENCODE_BIN_PATH,
+    defaultOpencodePath(),
+    "opencode",
+  ].filter(Boolean)
+  for (const c of candidates) {
+    if (!c) continue
+    if (path.isAbsolute(c)) {
+      if (fs.existsSync(c)) return c
+      continue
+    }
+    // try PATH resolution by spawning
+    try {
+      const which = require("child_process").spawnSync(process.platform === "win32" ? "where" : "which", [c], { stdio: "pipe" })
+      if (which.status === 0) return c
+    } catch {}
   }
+  return null
 }
 
-function download(url, dest) {
+function installOpencode() {
+  if (process.platform === "win32") return Promise.reject(new Error("Windows curl installer not supported"))
   return new Promise((resolve, reject) => {
-    const https = require("https")
-    const file = fs.createWriteStream(dest)
-    https
-      .get(url, (res) => {
-        if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-          // redirect
-          return download(res.headers.location, dest).then(resolve, reject)
-        }
-        if (res.statusCode !== 200) {
-          file.close(() => fs.unlink(dest, () => {}))
-          return reject(new Error(`download failed ${res.statusCode}: ${url}`))
-        }
-        res.pipe(file)
-        file.on("finish", () => file.close(resolve))
-      })
-      .on("error", (err) => {
-        file.close(() => fs.unlink(dest, () => {}))
-        reject(err)
-      })
+    const { spawn } = require("child_process")
+    const sh = spawn("bash", ["-lc", "curl -fsSL https://opencode.ai/install | bash"], { stdio: "inherit" })
+    sh.on("exit", (code) => (code === 0 ? resolve(null) : reject(new Error("install failed"))))
+    sh.on("error", reject)
   })
 }
 
@@ -143,12 +123,9 @@ function run(cmd, args) {
 function main() {
   const args = process.argv.slice(2)
 
-  // Prefer cached installed binary from releases
-  const cached = cacheBinaryPath()
-  if (fs.existsSync(cached)) {
-    run(cached, args)
-    return
-  }
+  // Prefer existing opencode binary (curl installer or PATH)
+  const oc = findOpencode()
+  if (oc) return run(oc, args)
 
   const bin = localOpencodeBin()
   if (bin) {
@@ -163,14 +140,13 @@ function main() {
     return
   }
 
-  // Attempt to download and cache our platform binary from GitHub Releases
-  ensureCachedBinary()
-    .then((bin) => run(bin, args))
-    .catch(() => {
-      // As last resort, fall back to opencode if present
-      const fallback = process.env.OPENCODE_BIN_PATH || "opencode"
-      run(fallback, args)
+  // Install opencode via curl then run
+  installOpencode()
+    .then(() => {
+      const next = findOpencode() || "opencode"
+      run(next, args)
     })
+    .catch(() => run("opencode", args))
 }
 
 main()

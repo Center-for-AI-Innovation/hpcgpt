@@ -22,6 +22,7 @@
     "build:slurm": "cd mcp_servers/slurm_mcp_server && bun run build",
     "build": "bun run install:servers && bun run build:illinois && bun run build:slurm",
     "build:dist": "bun run ./script/build.ts",
+    "postinstall": "node scripts/postinstall.js",
     "slurm-mcp-server": "node mcp_servers/slurm_mcp_server/dist/index.js",
     "illinois-chat-mcp-server": "node mcp_servers/illinois_chat_server/dist/index.js",
     "atlassian-mcp-server": "apptainer run --env-file .env.atlassian containers/atlassian-mcp-server.sif"
