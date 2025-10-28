@@ -13,7 +13,8 @@
     "prompts/",
     "mcp_servers/illinois_chat_server/dist/",
     "mcp_servers/slurm_mcp_server/dist/",
-    "scripts/postinstall.cjs"
+    "scripts/postinstall.cjs",
+    "favicon.png"
   ],
   "scripts": {
     "install:servers": "cd mcp_servers/illinois_chat_server && bun install && cd ../slurm_mcp_server && bun install && cd ../..",

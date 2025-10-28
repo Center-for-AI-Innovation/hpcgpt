@@ -21,5 +21,4 @@ scripts/postinstall.js
 # Exclude dev assets
 doc-scraping/
 example.env*
-favicon.png
 containers/
