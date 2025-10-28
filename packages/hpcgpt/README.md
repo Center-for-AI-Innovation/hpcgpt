@@ -56,15 +56,6 @@ Build MCP servers locally (optional):
 
 Releases and platform packaging are handled automatically by GitHub Actions when you push a tag (vX.Y.Z).
 
-Publish (order matters):
-
-```bash
-# 1) per-platform packages under packages/hpcgpt/dist/hpcgpt-*
-for d in packages/hpcgpt/dist/hpcgpt-*; do (cd "$d" && npm publish --access public); done
-# 2) meta package
-(cd packages/hpcgpt && npm publish --access public)
-```
-
 ## Environment
 
 - `NCSA_LLM_URL` – Base URL for NCSA Hosted provider
