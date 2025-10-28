@@ -60,8 +60,9 @@ jobs:
             packages/hpcgpt/dist/*.bin
           tag_name: v${{ steps.v.outputs.VERSION }}
 
-      - name: Publish meta package (OIDC)
-        working-directory: packages/hpcgpt
-        run: npm publish --provenance --access public
+      # Publishing to npm is temporarily disabled to match Opencode's curl-based distribution
+      # - name: Publish meta package (OIDC)
+      #   working-directory: packages/hpcgpt
+      #   run: npm publish --provenance --access public
 
 
