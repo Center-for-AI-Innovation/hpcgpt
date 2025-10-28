@@ -1,12 +1,20 @@
 {
   "name": "hpcgpt",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Single-command CLI to launch Opencode preconfigured for NCSA HPC (HPCGPT)",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
     "hpcgpt": "bin/hpcgpt.js"
   },
+  "files": [
+    "bin/",
+    "opencode.jsonc",
+    "prompts/",
+    "mcp_servers/**/dist/**",
+    "mcp_servers/**/package.json",
+    "mcp_servers/**/README.md"
+  ],
   "scripts": {
     "install:servers": "cd mcp_servers/illinois_chat_server && bun install && cd ../slurm_mcp_server && bun install && cd ../..",
     "install:jira": "mkdir -p containers && apptainer pull containers/atlassian-mcp-server.sif docker://ghcr.io/sooperset/mcp-atlassian:latest",
