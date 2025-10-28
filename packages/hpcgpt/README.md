@@ -46,18 +46,18 @@ hpcgpt
 - `mcp_servers/*`: local MCP servers compiled at install/build time.
 - `prompts/`: prompt content for the support agent.
 
-## Development
+## Development (for maintainers)
 
 Build MCP servers:
 
 ```bash
-bun run -C packages/hpcgpt build
+(cd packages/hpcgpt && bun run build)
 ```
 
 Build platform packages (CI recommended):
 
 ```bash
-HPCGPT_VERSION=0.1.0 bun run -C packages/hpcgpt build:dist
+HPCGPT_VERSION=0.1.0 (cd packages/hpcgpt && bun run build:dist)
 ```
 
 Publish (order matters):
