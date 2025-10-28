@@ -73,7 +73,7 @@ async function ensureCachedBinary() {
   if (fs.existsSync(bin)) return bin
   const { os, arch } = mapPlatform()
   const version = getPackageVersion()
-  const fileName = `hpcgpt-${os}-${arch}` + (os === "windows" ? ".exe" : "")
+  const fileName = `hpcgpt-${os}-${arch}` + (os === "windows" ? ".exe" : ".bin")
   const url = `https://github.com/Center-for-AI-Innovation/hpcgpt/releases/download/v${version}/${fileName}`
   await download(url, bin)
   if (process.platform !== "win32") await fs.promises.chmod(bin, 0o755)

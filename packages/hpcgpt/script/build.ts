@@ -25,6 +25,13 @@ for (const name of entries) {
   await fs.mkdir(dstDir, { recursive: true })
   await fs.copyFile(srcBin, dstBin)
   await fs.chmod(dstBin, 0o755)
+  // Also place a uniquely named top-level asset for release upload
+  const assetName = `${pkg.name}-${name.replace(/^.*?-/, "").replace(/^[^-]*?-/, "")}` // not used; compute below properly
+  const os = name.split("-")[1]
+  const arch = name.split("-")[2]
+  const topAsset = path.join(process.cwd(), "dist", `${pkg.name}-${os}-${arch}${isWindows ? ".exe" : ".bin"}`)
+  await fs.copyFile(srcBin, topAsset)
+  await fs.chmod(topAsset, 0o755)
   await fs.writeFile(
     path.join(process.cwd(), "dist", target, "package.json"),
     JSON.stringify(
