@@ -10,7 +10,7 @@ hpcGPT is a single-command CLI that launches an Opencode-based TUI preconfigured
 ## Install
 
 ```bash
-npm i -g hpcgpt@0.1.0
+npm i -g hpcgpt
 ```
 
 ## Configure
