@@ -48,17 +48,13 @@ hpcgpt
 
 ## Development (for maintainers)
 
-Build MCP servers:
+Build MCP servers locally (optional):
 
 ```bash
 (cd packages/hpcgpt && bun run build)
 ```
 
-Build platform packages (CI recommended):
-
-```bash
-HPCGPT_VERSION=0.1.0 (cd packages/hpcgpt && bun run build:dist)
-```
+Releases and platform packaging are handled automatically by GitHub Actions when you push a tag (vX.Y.Z).
 
 Publish (order matters):
 
