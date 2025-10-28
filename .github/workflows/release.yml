@@ -52,15 +52,12 @@ jobs:
           HPCGPT_VERSION=${{ steps.v.outputs.VERSION }} bun run build:dist
           ls -la dist
 
-      - name: Publish platform packages (OIDC)
-        working-directory: packages/hpcgpt
-        shell: bash
-        run: |
-          set -euo pipefail
-          for d in dist/hpcgpt-*; do
-            echo "Publishing $d"
-            (cd "$d" && npm publish --provenance --access public)
-          done
+      - name: Upload binaries to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            packages/hpcgpt/dist/**/bin/*
+          tag_name: v${{ steps.v.outputs.VERSION }}
 
       - name: Publish meta package (OIDC)
         working-directory: packages/hpcgpt
