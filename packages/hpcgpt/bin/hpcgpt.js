@@ -31,7 +31,6 @@ const overlay = {
       command: [process.execPath, illinoisPath],
       enabled: true,
     },
-    // Disable MCP entries that are not shipped in this package
     "report-server": {
       enabled: false,
     },
@@ -52,14 +51,31 @@ process.env.OPENCODE_CONFIG = cfg
 process.env.OPENCODE_CONFIG_CONTENT = JSON.stringify(overlay)
 process.env.OPENCODE_DISABLE_AUTOUPDATE = "1"
 
-function detect(os, arch) {
-  const mapOS = os === "win32" ? "windows" : os
-  const mapArch = arch === "x64" ? "x64" : arch === "arm64" ? "arm64" : arch
-  return `opencode-${mapOS}-${mapArch}`
+function mapPlatform() {
+  const os = process.platform === "win32" ? "windows" : process.platform
+  const arch = process.arch === "x64" ? "x64" : process.arch === "arm64" ? "arm64" : process.arch
+  return { os, arch }
 }
 
-function localBin() {
-  const name = detect(process.platform, process.arch)
+function findNodeModulesBinary() {
+  const { os, arch } = mapPlatform()
+  const name = `hpcgpt-${os}-${arch}`
+  let current = __dirname
+  while (true) {
+    const candidate = path.join(current, "node_modules", name, "bin", process.platform === "win32" ? "hpcgpt.exe" : "hpcgpt")
+    if (fs.existsSync(candidate)) return candidate
+    const parent = path.dirname(current)
+    if (parent === current) break
+    current = parent
+  }
+  return null
+}
+
+function localOpencodeBin() {
+  const os = process.platform === "win32" ? "windows" : process.platform
+  const arch = process.arch
+  const mappedArch = arch === "x64" ? "x64" : arch === "arm64" ? "arm64" : arch
+  const name = `opencode-${os}-${mappedArch}`
   const p = path.join(repoRoot, "packages", "opencode", "dist", name, "bin", process.platform === "win32" ? "opencode.exe" : "opencode")
   return fs.existsSync(p) ? p : null
 }
@@ -83,7 +99,14 @@ function run(cmd, args) {
 
 function main() {
   const args = process.argv.slice(2)
-  const bin = localBin()
+
+  const nmBin = findNodeModulesBinary()
+  if (nmBin) {
+    run(nmBin, args)
+    return
+  }
+
+  const bin = localOpencodeBin()
   if (bin) {
     run(bin, args)
     return
