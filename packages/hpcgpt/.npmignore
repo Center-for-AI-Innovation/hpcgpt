@@ -1,0 +1,25 @@
+# Exclude all nested node_modules to avoid hard links
+**/node_modules
+**/node_modules/**
+
+# Exclude MCP source trees (only ship dist)
+mcp_servers/**/src
+mcp_servers/**/src/**
+mcp_servers/**/test*
+mcp_servers/**/tsconfig.json
+mcp_servers/**/bun.lock
+
+# Exclude build caches
+**/.cache
+**/.turbo
+**/.bun
+
+# Exclude scripts we don't ship
+script/
+scripts/postinstall.js
+
+# Exclude dev assets
+doc-scraping/
+example.env*
+favicon.png
+containers/

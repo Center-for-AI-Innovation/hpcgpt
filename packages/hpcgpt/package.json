@@ -11,9 +11,8 @@
     "bin/",
     "opencode.jsonc",
     "prompts/",
-    "mcp_servers/**/dist/**",
-    "mcp_servers/**/package.json",
-    "mcp_servers/**/README.md",
+    "mcp_servers/illinois_chat_server/dist/",
+    "mcp_servers/slurm_mcp_server/dist/",
     "scripts/postinstall.cjs"
   ],
   "scripts": {
