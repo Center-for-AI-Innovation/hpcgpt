@@ -18,9 +18,10 @@ const version = process.env["HPCGPT_VERSION"] ?? "dev"
 for (const name of entries) {
   if (!name.startsWith("opencode-")) continue
   const target = name.replace(/^opencode-/, `${pkg.name}-`)
-  const srcBin = path.join(opencodeDist, name, "bin", process.platform === "win32" ? "opencode.exe" : "opencode")
+  const isWindows = name.includes("windows")
+  const srcBin = path.join(opencodeDist, name, "bin", isWindows ? "opencode.exe" : "opencode")
   const dstDir = path.join(process.cwd(), "dist", target, "bin")
-  const dstBin = path.join(dstDir, process.platform === "win32" ? "hpcgpt.exe" : "hpcgpt")
+  const dstBin = path.join(dstDir, isWindows ? "hpcgpt.exe" : "hpcgpt")
   await fs.mkdir(dstDir, { recursive: true })
   await fs.copyFile(srcBin, dstBin)
   await fs.chmod(dstBin, 0o755)
