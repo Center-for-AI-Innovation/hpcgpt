@@ -1,0 +1,42 @@
+# Just had to add these individualy through the UIUC Chat interface manually 
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/
+https://docs.ncsa.illinois.edu/systems/delta/en/latest/status_updates.html
+https://docs.ncsa.illinois.edu/systems/delta/en/latest/quick_start.html
+https://docs.ncsa.illinois.edu/systems/delta/en/latest/faq.html
+https://docs.ncsa.illinois.edu/systems/delta/en/latest/support_services.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/help.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/architecture.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/accounts.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/job-accounting.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/login.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/data-mgmt.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/prog-env.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/running-jobs.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/software.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/python/tensorflow.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/python/pytorch.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/ood/index.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/ood/shell.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/ood/code-server.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/ood/jupyter.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/ood/custom-jupyterlab.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/vscode/code-server.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/vscode/remote-ssh.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/vscode/remote-jupyter.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/containers.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/visualization.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/debug-perf.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/citizenship.html
+https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/user-guide/acknowledge.html
+### Taiga Docs
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/status-updates.html
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/help.html
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/user-guide/architecture.html
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/user-guide/lustre.html
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/user-guide/allocations.html
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/user-guide/pricing.html
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/user-guide/access-methods.html
+https://docs.ncsa.illinois.edu/systems/taiga/en/latest/user-guide/data-recovery.html
+### Slurm (worked for all docs with equal and below ingest option) 
+https://slurm.schedmd.com
