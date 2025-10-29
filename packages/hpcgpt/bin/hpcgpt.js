@@ -47,6 +47,27 @@ if (!fs.existsSync(illinoisPath)) {
   console.error(`[hpcgpt] Missing MCP server: ${illinoisPath}`)
 }
 
+// Load .env from cwd or ~/.hpcgpt/env before starting opencode
+function loadEnv(envPath) {
+  if (!fs.existsSync(envPath)) return
+  const content = fs.readFileSync(envPath, "utf8")
+  for (const line of content.split("\n")) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith("#")) continue
+    const match = trimmed.match(/^([^=]+)=(.*)$/)
+    if (!match) continue
+    const [, key, value] = match
+    if (!process.env[key]) {
+      process.env[key] = value.replace(/^["']|["']$/g, "")
+    }
+  }
+}
+
+const userEnv = path.join(process.env.HOME || "/tmp", ".hpcgpt", "env")
+const cwdEnv = path.join(process.cwd(), ".env")
+loadEnv(userEnv)
+loadEnv(cwdEnv)
+
 process.env.OPENCODE_CONFIG = cfg
 process.env.OPENCODE_CONFIG_CONTENT = JSON.stringify(overlay)
 process.env.OPENCODE_DISABLE_AUTOUPDATE = "1"
