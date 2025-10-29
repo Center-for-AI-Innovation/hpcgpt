@@ -1,6 +1,6 @@
 {
   "name": "hpcgpt",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Single-command CLI to launch Opencode preconfigured for NCSA HPC (HPCGPT)",
   "main": "dist/index.js",
   "type": "module",
