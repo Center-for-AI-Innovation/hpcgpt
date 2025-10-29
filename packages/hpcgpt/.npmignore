@@ -20,5 +20,5 @@ scripts/postinstall.js
 
 # Exclude dev assets
 doc-scraping/
-example.env*
+example.env.atlassian
 containers/

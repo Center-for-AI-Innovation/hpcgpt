@@ -15,7 +15,14 @@ npm i -g hpcgpt
 
 ## Configure
 
-Set environment variables for your providers and tools:
+Create a `.env` file in your working directory:
+
+```bash
+cp $(npm root -g)/hpcgpt/example.env .env
+# Edit .env with your values
+```
+
+Or set environment variables globally in `~/.hpcgpt/env` or manually export them:
 
 ```bash
 export NCSA_LLM_URL="https://<your-hosted-llm>"
@@ -23,7 +30,7 @@ export NCSA_OLLAMA_URL="http://<your-ollama>"
 export ILLINOIS_CHAT_API_KEY="<your-key>"
 ```
 
-Optional (Atlassian MCP in the future): see `example.env.atlassian` for reference.
+The `hpcgpt` launcher auto-loads `.env` from the current directory or `~/.hpcgpt/env`.
 
 ## Run
 
